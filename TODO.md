@@ -1,2 +1,3 @@
-ligne 101 à regarder
-acheter webhook pour valider le champ record type que le user peut envoyer ? 
+voir pour commnencer a creer ressources sur aws ? 
+comment gerer l'update ? 
+mettre en place webhook pour valider le champ record type que le user peut envoyer ? 

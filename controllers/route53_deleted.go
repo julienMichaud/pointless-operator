@@ -1,14 +1,15 @@
 package controllers
 
 import (
+	"context"
+
 	cachev1alpha1 "github.com/julienMichaud/pointless-operator/api/v1alpha1"
 
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func (r *Route53Reconciler) handleDeleteFinalizer(request reconcile.Request, instance *cachev1alpha1.Route53) error {
-	// log := r.Log.WithValues("route53", instance.ObjectMeta.Namespace)
+func (r *Route53Reconciler) handleDeleteFinalizer(ctx context.Context, request reconcile.Request, instance *cachev1alpha1.Route53) error {
 
 	// log.Info("Creating route53 record: " + instance.GetObjectMeta().GetName())
 
@@ -25,13 +26,12 @@ func (r *Route53Reconciler) handleDeleteFinalizer(request reconcile.Request, ins
 
 	// Add monitor for provider
 	// monitorService.Add(monitor)
-	log.Log.Info("for the CR %s, delete things on AWS now....", instance.Name)
+	log.Printf("for the CR %s, delete things on AWS now....", instance.Name)
 
 	return nil
 }
 
-func (r *Route53Reconciler) handleDelete(request reconcile.Request, instance *cachev1alpha1.Route53) error {
-	// log := r.Log.WithValues("route53", instance.ObjectMeta.Namespace)
+func (r *Route53Reconciler) doFinalizerOperationsForRoute53(instance *cachev1alpha1.Route53) error {
 
 	// log.Info("Creating route53 record: " + instance.GetObjectMeta().GetName())
 
@@ -48,7 +48,8 @@ func (r *Route53Reconciler) handleDelete(request reconcile.Request, instance *ca
 
 	// Add monitor for provider
 	// monitorService.Add(monitor)
-	log.Log.Info("for the CR %s, delete Cr now....", instance.Name)
 
+	log.Printf("for the CR %s with domain %s and record %s, delete record now on AWS...", instance.Name, instance.Spec.Domain, instance.Spec.RecordType)
 	return nil
+
 }
