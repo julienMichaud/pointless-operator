@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/go-logr/logr"
 	cachev1alpha1 "github.com/julienMichaud/pointless-operator/api/v1alpha1"
 	log "github.com/sirupsen/logrus"
@@ -43,6 +44,7 @@ type Route53Reconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 	Log      logr.Logger
+	AWS      *route53.Client
 }
 
 //+kubebuilder:rbac:groups=cache.jmichaud.net,resources=route53s,verbs=get;list;watch;create;update;patch;delete

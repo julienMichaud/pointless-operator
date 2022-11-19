@@ -71,6 +71,9 @@ spec:
         args:
         - --leader-elect
         image: docker.io/library/controller:latest
+        envFrom:
+        - configMapRef:
+            name: postgres-config
         name: manager
         securityContext:
           allowPrivilegeEscalation: false

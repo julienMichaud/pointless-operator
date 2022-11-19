@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 
@@ -31,6 +32,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/route53"
 	cachev1alpha1 "github.com/julienMichaud/pointless-operator/api/v1alpha1"
 	"github.com/julienMichaud/pointless-operator/controllers"
 	//+kubebuilder:scaffold:imports
@@ -52,6 +55,15 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("eu-west-3"))
+	if err != nil {
+		setupLog.Error(err, "unable to load SDK config")
+		os.Exit(1)
+	}
+
+	route53client := route53.NewFromConfig(cfg)
+
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -99,6 +111,7 @@ func main() {
 	if err = (&controllers.Route53Reconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
+		AWS:    route53client,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Route53")
 		os.Exit(1)
