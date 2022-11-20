@@ -35,6 +35,10 @@ type Route53Spec struct {
 	// Record type you want to create (e.g. "A|CNAME|TXT")
 	// +required
 	RecordType string `json:"recordtype"`
+
+	// Value you want to create (e.g. "8.8.8.8")
+	// +required
+	Value string `json:"value"`
 }
 
 // Route53Status defines the observed state of Route53

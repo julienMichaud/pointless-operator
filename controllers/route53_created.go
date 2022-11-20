@@ -40,7 +40,11 @@ func (r *Route53Reconciler) handleCreate(ctx context.Context, request reconcile.
 
 	log.Printf("for the CR %s, will add record with domain name %s and type %s", instance.Name, instance.Spec.Domain, instance.Spec.RecordType)
 
-	//do code to create record
+	err = checkAWS.CreateRecord(*r.AWS, instance.Spec.Domain, instance.Spec.RecordType, instance.Spec.Value)
+	if err != nil {
+		log.Error(err, "Failed to create record %s", instance.Spec.Domain)
+		return err
+	}
 
 	// The following implementation will update the status
 	meta.SetStatusCondition(&instance.Status.Conditions, metav1.Condition{Type: "Available",

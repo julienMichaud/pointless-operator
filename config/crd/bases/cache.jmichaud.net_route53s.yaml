@@ -41,9 +41,13 @@ spec:
               recordtype:
                 description: Record type you want to create (e.g. "A|CNAME|TXT")
                 type: string
+              value:
+                description: Value you want to create (e.g. "8.8.8.8")
+                type: string
             required:
             - domain
             - recordtype
+            - value
             type: object
           status:
             description: Route53Status defines the observed state of Route53

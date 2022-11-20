@@ -7,7 +7,8 @@ metadata:
     app.kubernetes.io/part-of: pointless-operator
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: pointless-operator
-  name: route53-sample2
+  name: route53-sample3
 spec:
   domain: mytest.jmichaud.net
   recordtype: A
+  value: 8.8.8.8
