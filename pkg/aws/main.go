@@ -59,3 +59,37 @@ func CreateRecord(route53client route53.Client, record, recordType, value string
 	return nil
 
 }
+
+func DeleteRecord(route53client route53.Client, record, recordType, value string) error {
+
+	id := "Z041619718A5JIL5IXWDC"
+
+	input := &route53.ChangeResourceRecordSetsInput{
+		ChangeBatch: &types.ChangeBatch{
+			Changes: []types.Change{
+				{
+					Action: types.ChangeActionDelete,
+					ResourceRecordSet: &types.ResourceRecordSet{
+						Name: aws.String(record + "."),
+						ResourceRecords: []types.ResourceRecord{
+							{
+								Value: &value,
+							},
+						},
+						Type: types.RRTypeA,
+						TTL:  aws.Int64(60),
+					},
+				},
+			},
+		},
+		HostedZoneId: &id,
+	}
+
+	_, err := route53client.ChangeResourceRecordSets(context.TODO(), input)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
