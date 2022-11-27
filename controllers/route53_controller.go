@@ -169,7 +169,7 @@ func (r *Route53Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if err = r.handleCreate(ctx, req, route53); err != nil {
-		log.Infof("error while creating record %s ", err)
+		log.Infof("error while creating/updating record %s ", err)
 		return ctrl.Result{}, err
 	}
 
