@@ -17,7 +17,7 @@ func (r *Route53Reconciler) handleCreate(ctx context.Context, request reconcile.
 
 	log.Printf("for the CR %s, will check if record with domain name %s and type %s already exist", instance.Name, instance.Spec.Domain, instance.Spec.RecordType)
 
-	exist, recordName, recordType, recordValue, err := checkAWS.RetrieveRecordOnR53(*r.AWS, instance.Spec.Domain, instance.Spec.RecordType)
+	exist, recordName, recordType, recordValue, recordTTL, err := checkAWS.RetrieveRecordOnR53(*r.AWS, instance.Spec.Domain)
 	if err != nil {
 		log.Error(err, "Failed to check if record exist")
 		return err
@@ -26,11 +26,11 @@ func (r *Route53Reconciler) handleCreate(ctx context.Context, request reconcile.
 	if exist {
 		log.Printf("record already exist, checking if every values is correct on AWS side")
 
-		if recordName != fmt.Sprintf(instance.Spec.Domain+".") || recordType != instance.Spec.RecordType || recordValue != instance.Spec.Value {
+		if recordName != fmt.Sprintf(instance.Spec.Domain+".") || recordType != instance.Spec.RecordType || recordValue != instance.Spec.Value || recordTTL != instance.Spec.TTL {
 
-			log.Printf("got: %s,%s,%s want: %s.,%s,%s", recordName, recordType, recordValue, instance.Spec.Domain, instance.Spec.RecordType, instance.Spec.Value)
+			log.Printf("got: %s,%s,%s,%v want: %s.,%s,%s,%v", recordName, recordType, recordValue, recordTTL, instance.Spec.Domain, instance.Spec.RecordType, instance.Spec.Value, instance.Spec.TTL)
 
-			err = checkAWS.CreateRecord(*r.AWS, instance.Spec.Domain, instance.Spec.RecordType, instance.Spec.Value)
+			err = checkAWS.CreateRecord(*r.AWS, instance.Spec.Domain, instance.Spec.RecordType, instance.Spec.Value, instance.Spec.TTL)
 			if err != nil {
 				log.Error(err, "Failed to update record %s", instance.Spec.Domain)
 
@@ -62,7 +62,7 @@ func (r *Route53Reconciler) handleCreate(ctx context.Context, request reconcile.
 
 		log.Printf("for the CR %s, will add record with domain name %s and type %s", instance.Name, instance.Spec.Domain, instance.Spec.RecordType)
 
-		err = checkAWS.CreateRecord(*r.AWS, instance.Spec.Domain, instance.Spec.RecordType, instance.Spec.Value)
+		err = checkAWS.CreateRecord(*r.AWS, instance.Spec.Domain, instance.Spec.RecordType, instance.Spec.Value, instance.Spec.TTL)
 		if err != nil {
 			log.Error(err, "Failed to create record %s", instance.Spec.Domain)
 			return err

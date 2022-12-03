@@ -41,6 +41,13 @@ spec:
               recordtype:
                 description: Record type you want to create (e.g. "A|CNAME|TXT")
                 type: string
+              ttl:
+                default: 60
+                description: The amount of time, in seconds, that you want DNS recursive
+                  resolvers to cache information about this record (default 60)
+                format: int64
+                minimum: 60
+                type: integer
               value:
                 description: Value you want to create (e.g. "8.8.8.8")
                 type: string

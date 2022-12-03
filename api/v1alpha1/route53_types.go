@@ -39,6 +39,12 @@ type Route53Spec struct {
 	// Value you want to create (e.g. "8.8.8.8")
 	// +required
 	Value string `json:"value"`
+
+	// The amount of time, in seconds, that you want DNS recursive resolvers to cache information about this record (default 60)
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default:=60
+	// +kubebuilder:validation:Minimum=60
+	TTL int64 `json:"ttl"`
 }
 
 // Route53Status defines the observed state of Route53

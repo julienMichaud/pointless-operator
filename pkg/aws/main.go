@@ -9,25 +9,25 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
 )
 
-func RetrieveRecordOnR53(route53client route53.Client, record, recordType string) (found bool, recordName string, recordTypereturned string, recordValue string, error error) {
+func RetrieveRecordOnR53(route53client route53.Client, record string) (found bool, recordName string, recordTypereturned string, recordValue string, ttl int64, error error) {
 	id := "Z041619718A5JIL5IXWDC"
 
 	records, err := route53client.ListResourceRecordSets(context.TODO(), &route53.ListResourceRecordSetsInput{HostedZoneId: &id})
 	if err != nil {
-		return false, "", "", "", err
+		return false, "", "", "", 0, err
 	}
 
 	for _, v := range records.ResourceRecordSets { // should modify to work with paginate
 		if *v.Name == fmt.Sprintf("%s.", record) {
-			return true, *v.Name, string(v.Type), *v.ResourceRecords[0].Value, nil
+			return true, *v.Name, string(v.Type), *v.ResourceRecords[0].Value, *v.TTL, nil
 		}
 
 	}
-	return false, "", "", "", nil
+	return false, "", "", "", 0, nil
 
 }
 
-func CreateRecord(route53client route53.Client, record, recordType, value string) error {
+func CreateRecord(route53client route53.Client, record, recordType, value string, ttl int64) error {
 	id := "Z041619718A5JIL5IXWDC"
 
 	input := &route53.ChangeResourceRecordSetsInput{
@@ -43,7 +43,7 @@ func CreateRecord(route53client route53.Client, record, recordType, value string
 							},
 						},
 						Type: types.RRTypeA,
-						TTL:  aws.Int64(60),
+						TTL:  &ttl,
 					},
 				},
 			},
@@ -60,7 +60,7 @@ func CreateRecord(route53client route53.Client, record, recordType, value string
 
 }
 
-func DeleteRecord(route53client route53.Client, record, recordType, value string) error {
+func DeleteRecord(route53client route53.Client, record, recordType, value string, ttl int64) error {
 
 	id := "Z041619718A5JIL5IXWDC"
 
@@ -77,7 +77,7 @@ func DeleteRecord(route53client route53.Client, record, recordType, value string
 							},
 						},
 						Type: types.RRTypeA,
-						TTL:  aws.Int64(60),
+						TTL:  &ttl,
 					},
 				},
 			},
