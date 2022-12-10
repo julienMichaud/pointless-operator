@@ -27,8 +27,29 @@ func RetrieveRecordOnR53(route53client route53.Client, record string) (found boo
 
 }
 
-func CreateRecord(route53client route53.Client, record, recordType, value string, ttl int64) error {
+type RecordChanger interface {
+	ChangeRecordSet(input *route53.ChangeResourceRecordSetsInput) error
+}
+
+type Route53RecordChanger struct {
+	Client *route53.Client
+}
+
+func (r Route53RecordChanger) ChangeRecordSet(input *route53.ChangeResourceRecordSetsInput) error {
+
+	_, err := r.Client.ChangeResourceRecordSets(context.TODO(), input)
+
+	return err
+}
+
+func CreateRecord(recordChanger RecordChanger, record, recordType, value string, ttl int64) error {
 	id := "Z041619718A5JIL5IXWDC"
+
+	var recordTypeAWS types.RRType
+
+	if recordType == "A" {
+		recordTypeAWS = types.RRTypeA
+	}
 
 	input := &route53.ChangeResourceRecordSetsInput{
 		ChangeBatch: &types.ChangeBatch{
@@ -42,7 +63,7 @@ func CreateRecord(route53client route53.Client, record, recordType, value string
 								Value: &value,
 							},
 						},
-						Type: types.RRTypeA,
+						Type: recordTypeAWS,
 						TTL:  &ttl,
 					},
 				},
@@ -51,7 +72,7 @@ func CreateRecord(route53client route53.Client, record, recordType, value string
 		HostedZoneId: &id,
 	}
 
-	_, err := route53client.ChangeResourceRecordSets(context.TODO(), input)
+	err := recordChanger.ChangeRecordSet(input)
 
 	if err != nil {
 		return err
