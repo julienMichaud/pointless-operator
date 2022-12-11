@@ -18,8 +18,9 @@ func (r *Route53Reconciler) handleCreate(ctx context.Context, contextLogging log
 	contextLogging.Printf("for the CR %s, will check if record with domain name %s and type %s already exist", instance.Name, instance.Spec.Domain, instance.Spec.RecordType)
 
 	recordChanger := checkAWS.Route53RecordChanger{Client: r.AWS}
+	recordRetriever := checkAWS.Route53RecordRetriever{Client: r.AWS}
 
-	exist, recordName, recordType, recordValue, recordTTL, err := checkAWS.RetrieveRecordOnR53(*r.AWS, instance.Spec.Domain)
+	exist, recordName, recordType, recordValue, recordTTL, err := checkAWS.RetrieveRecordOnR53(recordRetriever, instance.Spec.Domain)
 	if err != nil {
 		contextLogging.Error(err, "Failed to check if record exist")
 		return err

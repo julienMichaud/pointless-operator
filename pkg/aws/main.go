@@ -9,10 +9,29 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
 )
 
-func RetrieveRecordOnR53(route53client route53.Client, record string) (found bool, recordName string, recordTypereturned string, recordValue string, ttl int64, error error) {
+type RecordRetriever interface {
+	ListRecords(input *route53.ListResourceRecordSetsInput) (*route53.ListResourceRecordSetsOutput, error)
+}
+
+type Route53RecordRetriever struct {
+	Client *route53.Client
+}
+
+func (r Route53RecordRetriever) ListRecords(input *route53.ListResourceRecordSetsInput) (*route53.ListResourceRecordSetsOutput, error) {
+
+	records, err := r.Client.ListResourceRecordSets(context.TODO(), input)
+	if err != nil {
+		return nil, err
+	}
+
+	return records, nil
+}
+
+func RetrieveRecordOnR53(recordretriever RecordRetriever, record string) (found bool, recordName string, recordTypereturned string, recordValue string, ttl int64, error error) {
+
 	id := "Z041619718A5JIL5IXWDC"
 
-	records, err := route53client.ListResourceRecordSets(context.TODO(), &route53.ListResourceRecordSetsInput{HostedZoneId: &id})
+	records, err := recordretriever.ListRecords(&route53.ListResourceRecordSetsInput{HostedZoneId: &id})
 	if err != nil {
 		return false, "", "", "", 0, err
 	}
