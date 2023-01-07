@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	cachev1alpha1 "github.com/julienMichaud/pointless-operator/api/v1alpha1"
+	"go.opentelemetry.io/otel"
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	checkAWS "github.com/julienMichaud/pointless-operator/pkg/aws"
@@ -15,12 +16,15 @@ import (
 
 func (r *Route53Reconciler) handleCreate(ctx context.Context, contextLogging log.Entry, request reconcile.Request, instance *cachev1alpha1.Route53) error {
 
+	spanCtx, span := otel.Tracer(name).Start(ctx, "handleCreate")
+	defer span.End()
+
 	contextLogging.Printf("for the CR %s, will check if record with domain name %s and type %s already exist", instance.Name, instance.Spec.Domain, instance.Spec.RecordType)
 
 	recordChanger := checkAWS.Route53RecordChanger{Client: r.AWS}
 	recordRetriever := checkAWS.Route53RecordRetriever{Client: r.AWS}
 
-	exist, recordName, recordType, recordValue, recordTTL, err := checkAWS.RetrieveRecordOnR53(recordRetriever, instance.Spec.Domain)
+	exist, recordName, recordType, recordValue, recordTTL, err := checkAWS.RetrieveRecordOnR53(spanCtx, recordRetriever, instance.Spec.Domain)
 	if err != nil {
 		contextLogging.Error(err, "Failed to check if record exist")
 		return err
@@ -33,7 +37,7 @@ func (r *Route53Reconciler) handleCreate(ctx context.Context, contextLogging log
 
 			contextLogging.Printf("got: %s,%s,%s,%v want: %s.,%s,%s,%v", recordName, recordType, recordValue, recordTTL, instance.Spec.Domain, instance.Spec.RecordType, instance.Spec.Value, instance.Spec.TTL)
 
-			err = checkAWS.CreateRecord(recordChanger, instance.Spec.Domain, instance.Spec.RecordType, instance.Spec.Value, instance.Spec.TTL)
+			err = checkAWS.CreateRecord(spanCtx, recordChanger, instance.Spec.Domain, instance.Spec.RecordType, instance.Spec.Value, instance.Spec.TTL)
 			if err != nil {
 				contextLogging.Error(err, "Failed to update record %s", instance.Spec.Domain)
 
@@ -65,7 +69,7 @@ func (r *Route53Reconciler) handleCreate(ctx context.Context, contextLogging log
 
 		contextLogging.Printf("for the CR %s, will add record with domain name %s and type %s", instance.Name, instance.Spec.Domain, instance.Spec.RecordType)
 
-		err = checkAWS.CreateRecord(recordChanger, instance.Spec.Domain, instance.Spec.RecordType, instance.Spec.Value, instance.Spec.TTL)
+		err = checkAWS.CreateRecord(ctx, recordChanger, instance.Spec.Domain, instance.Spec.RecordType, instance.Spec.Value, instance.Spec.TTL)
 		if err != nil {
 			contextLogging.Error(err, "Failed to create record %s", instance.Spec.Domain)
 			return err

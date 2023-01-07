@@ -10,14 +10,14 @@ import (
 )
 
 type RecordRetriever interface {
-	ListRecords(input *route53.ListResourceRecordSetsInput) (*route53.ListResourceRecordSetsOutput, error)
+	ListRecords(ctx context.Context, input *route53.ListResourceRecordSetsInput) (*route53.ListResourceRecordSetsOutput, error)
 }
 
 type Route53RecordRetriever struct {
 	Client *route53.Client
 }
 
-func (r Route53RecordRetriever) ListRecords(input *route53.ListResourceRecordSetsInput) (*route53.ListResourceRecordSetsOutput, error) {
+func (r Route53RecordRetriever) ListRecords(ctx context.Context, input *route53.ListResourceRecordSetsInput) (*route53.ListResourceRecordSetsOutput, error) {
 
 	records, err := r.Client.ListResourceRecordSets(context.TODO(), input)
 	if err != nil {
@@ -27,11 +27,11 @@ func (r Route53RecordRetriever) ListRecords(input *route53.ListResourceRecordSet
 	return records, nil
 }
 
-func RetrieveRecordOnR53(recordretriever RecordRetriever, record string) (found bool, recordName string, recordTypereturned string, recordValue string, ttl int64, error error) {
+func RetrieveRecordOnR53(ctx context.Context, recordretriever RecordRetriever, record string) (found bool, recordName string, recordTypereturned string, recordValue string, ttl int64, error error) {
 
 	id := "Z041619718A5JIL5IXWDC"
 
-	records, err := recordretriever.ListRecords(&route53.ListResourceRecordSetsInput{HostedZoneId: &id})
+	records, err := recordretriever.ListRecords(ctx, &route53.ListResourceRecordSetsInput{HostedZoneId: &id})
 	if err != nil {
 		return false, "", "", "", 0, err
 	}
@@ -47,21 +47,22 @@ func RetrieveRecordOnR53(recordretriever RecordRetriever, record string) (found 
 }
 
 type RecordChanger interface {
-	ChangeRecordSet(input *route53.ChangeResourceRecordSetsInput) error
+	ChangeRecordSet(ctx context.Context, input *route53.ChangeResourceRecordSetsInput) error
 }
 
 type Route53RecordChanger struct {
 	Client *route53.Client
 }
 
-func (r Route53RecordChanger) ChangeRecordSet(input *route53.ChangeResourceRecordSetsInput) error {
+func (r Route53RecordChanger) ChangeRecordSet(ctx context.Context, input *route53.ChangeResourceRecordSetsInput) error {
 
 	_, err := r.Client.ChangeResourceRecordSets(context.TODO(), input)
 
 	return err
 }
 
-func CreateRecord(recordChanger RecordChanger, record, recordType, value string, ttl int64) error {
+func CreateRecord(ctx context.Context, recordChanger RecordChanger, record, recordType, value string, ttl int64) error {
+
 	id := "Z041619718A5JIL5IXWDC"
 
 	var recordTypeAWS types.RRType
@@ -91,7 +92,7 @@ func CreateRecord(recordChanger RecordChanger, record, recordType, value string,
 		HostedZoneId: &id,
 	}
 
-	err := recordChanger.ChangeRecordSet(input)
+	err := recordChanger.ChangeRecordSet(ctx, input)
 
 	if err != nil {
 		return err
@@ -100,7 +101,7 @@ func CreateRecord(recordChanger RecordChanger, record, recordType, value string,
 
 }
 
-func DeleteRecord(route53client route53.Client, record, recordType, value string, ttl int64) error {
+func DeleteRecord(ctx context.Context, route53client route53.Client, record, recordType, value string, ttl int64) error {
 
 	id := "Z041619718A5JIL5IXWDC"
 

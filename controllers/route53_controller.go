@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/otel"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,6 +41,7 @@ import (
 )
 
 const route53Finalizer = "route53.jmichaud.net/finalizer"
+const name = "r53-controller"
 
 // Route53Reconciler reconciles a Route53 object
 type Route53Reconciler struct {
@@ -72,6 +75,9 @@ func (r *Route53Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		// typeDegradedMemcached represents the status used when the custom resource is deleted and the finalizer operations are must to occur.
 		typeDegradedRoute53 = "Degraded"
 	)
+
+	spanCtx, span := otel.Tracer(name).Start(ctx, "Run")
+	defer span.End()
 
 	route53 := &cachev1alpha1.Route53{}
 
@@ -134,7 +140,7 @@ func (r *Route53Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			// TODO(user): If you add operations to the doFinalizerOperationsForMemcached method
 			// then you need to ensure that all worked fine before deleting and updating the Downgrade status
 			// otherwise, you should requeue here.
-			if err := r.doFinalizerOperationsForRoute53(route53, *contextLogger); err != nil {
+			if err := r.doFinalizerOperationsForRoute53(spanCtx, route53, *contextLogger); err != nil {
 				contextLogger.Infof("error while executing doFinalizerOperationsForRoute53 %s ", err)
 				return ctrl.Result{}, err
 			}
@@ -176,7 +182,7 @@ func (r *Route53Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 
-	if err = r.handleCreate(ctx, *contextLogger, req, route53); err != nil {
+	if err = r.handleCreate(spanCtx, *contextLogger, req, route53); err != nil {
 		contextLogger.Infof("error while creating/updating record %s ", err)
 		return ctrl.Result{}, err
 	}

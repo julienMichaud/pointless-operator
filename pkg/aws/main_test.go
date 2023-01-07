@@ -1,6 +1,7 @@
 package pointlessAws
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -21,7 +22,7 @@ func validIP4(ipAddress string) bool {
 type Route53RecordChangerMock struct {
 }
 
-func (r Route53RecordChangerMock) ChangeRecordSet(input *route53.ChangeResourceRecordSetsInput) error {
+func (r Route53RecordChangerMock) ChangeRecordSet(ctx context.Context, input *route53.ChangeResourceRecordSetsInput) error {
 	validateIP := validIP4(*input.ChangeBatch.Changes[0].ResourceRecordSet.ResourceRecords[0].Value)
 	if validateIP != true {
 		return fmt.Errorf("not a valid IP")
@@ -36,6 +37,7 @@ func (r Route53RecordChangerMock) ChangeRecordSet(input *route53.ChangeResourceR
 
 func TestCreateRecord(t *testing.T) {
 	recordChanger := Route53RecordChangerMock{}
+	ctx := context.TODO()
 
 	type test struct {
 		domain     string
@@ -52,7 +54,7 @@ func TestCreateRecord(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		err := CreateRecord(recordChanger, tc.domain, tc.recordType, tc.record, tc.TTL)
+		err := CreateRecord(ctx, recordChanger, tc.domain, tc.recordType, tc.record, tc.TTL)
 		if err != nil {
 			if tc.wantErr == false {
 				t.Errorf("didnt want err, got '%s'", err)
@@ -64,7 +66,7 @@ func TestCreateRecord(t *testing.T) {
 type Route53RecordRetrieverMock struct {
 }
 
-func (r Route53RecordRetrieverMock) ListRecords(input *route53.ListResourceRecordSetsInput) (*route53.ListResourceRecordSetsOutput, error) {
+func (r Route53RecordRetrieverMock) ListRecords(ctx context.Context, input *route53.ListResourceRecordSetsInput) (*route53.ListResourceRecordSetsOutput, error) {
 	ttl := int64(60)
 	output := route53.ListResourceRecordSetsOutput{ResourceRecordSets: []types.ResourceRecordSet{
 		{
@@ -83,6 +85,7 @@ func (r Route53RecordRetrieverMock) ListRecords(input *route53.ListResourceRecor
 
 func TestRetrieveRecordOnR53(t *testing.T) {
 	recordRetriever := Route53RecordRetrieverMock{}
+	ctx := context.TODO()
 
 	type test struct {
 		recordGiven     string
@@ -101,7 +104,7 @@ func TestRetrieveRecordOnR53(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		found, recordName, recordTypeReturned, recordValueReturned, ttlReturned, err := RetrieveRecordOnR53(recordRetriever, tc.recordGiven)
+		found, recordName, recordTypeReturned, recordValueReturned, ttlReturned, err := RetrieveRecordOnR53(ctx, recordRetriever, tc.recordGiven)
 		if err != nil {
 			if tc.wantErr == false {
 				t.Errorf("didnt want err, got '%s'", err)

@@ -19,10 +19,19 @@ package main
 import (
 	"context"
 	"flag"
+	"io"
+	"log"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,6 +60,30 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
+// newExporter returns a console exporter.
+func newExporter(w io.Writer) (trace.SpanExporter, error) {
+	return stdouttrace.New(
+		stdouttrace.WithWriter(w),
+		// Use human-readable output.
+		stdouttrace.WithPrettyPrint(),
+		// Do not print timestamps for the demo.
+		stdouttrace.WithoutTimestamps(),
+	)
+}
+
+func newResource() *resource.Resource {
+	r, _ := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("fib"),
+			semconv.ServiceVersionKey.String("v0.1.0"),
+			attribute.String("environment", "demo"),
+		),
+	)
+	return r
+}
+
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
@@ -63,6 +96,31 @@ func main() {
 	}
 
 	route53client := route53.NewFromConfig(cfg)
+
+	l := log.New(os.Stdout, "", 0)
+
+	// Write telemetry data to a file.
+	f, err := os.Create("traces.txt")
+	if err != nil {
+		l.Fatal(err)
+	}
+	defer f.Close()
+
+	exp, err := newExporter(f)
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exp),
+		trace.WithResource(newResource()),
+	)
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			l.Fatal(err)
+		}
+	}()
+	otel.SetTracerProvider(tp)
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
